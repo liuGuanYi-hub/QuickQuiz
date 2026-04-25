@@ -1,23 +1,28 @@
 package com.example.QuickQuiz_backend.controller;
 
+import com.example.QuickQuiz_backend.dto.AuthenticationRequest;
+import com.example.QuickQuiz_backend.dto.AuthenticationResponse;
+import com.example.QuickQuiz_backend.dto.RegisterRequest;
 import com.example.QuickQuiz_backend.entity.Role;
 import com.example.QuickQuiz_backend.entity.User;
 import com.example.QuickQuiz_backend.repository.UserRepository;
 import com.example.QuickQuiz_backend.security.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "用户认证", description = "注册、登录")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -26,6 +31,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/register")
+    @Operation(summary = "用户注册")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
             var user = User.builder()
@@ -39,11 +45,12 @@ public class AuthController {
                     .token(jwtToken)
                     .build());
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("message", "Username already exists."));
+            return ResponseEntity.badRequest().body(Map.of("message", "Username already exists."));
         }
     }
 
     @PostMapping("/login")
+    @Operation(summary = "用户登录")
     public ResponseEntity<AuthenticationResponse> authenticate(@Valid @RequestBody AuthenticationRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(

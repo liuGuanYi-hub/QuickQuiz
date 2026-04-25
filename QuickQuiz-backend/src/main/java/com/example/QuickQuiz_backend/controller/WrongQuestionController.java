@@ -1,11 +1,10 @@
 package com.example.QuickQuiz_backend.controller;
 
 import com.example.QuickQuiz_backend.dto.WrongQuestionDto;
-import com.example.QuickQuiz_backend.entity.Question;
-import com.example.QuickQuiz_backend.entity.WrongQuestion;
-import com.example.QuickQuiz_backend.repository.QuestionRepository;
 import com.example.QuickQuiz_backend.repository.WrongQuestionRepository;
 import com.example.QuickQuiz_backend.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,80 +12,34 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/wrong-questions")
 @RequiredArgsConstructor
+@Tag(name = "错题本", description = "错题查看、练习、移除")
 public class WrongQuestionController {
 
     private final WrongQuestionRepository wrongQuestionRepository;
-    private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
 
     @GetMapping
-    public ResponseEntity<List<WrongQuestionDto>> getWrongQuestions(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        var user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-
-        List<WrongQuestion> wqs = wrongQuestionRepository.findByUserIdOrderByLastWrongAtDesc(user.getId());
-
-        List<WrongQuestionDto> dtos = wqs.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(dtos);
-    }
-
-    @GetMapping("/count")
-    public ResponseEntity<Long> getWrongQuestionCount(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        var user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-        return ResponseEntity.ok(wrongQuestionRepository.countByUserIdAndMasteredFalse(user.getId()));
+    @Operation(summary = "获取当前用户的错题列表（支持标签筛选）")
+    public ResponseEntity<List<WrongQuestionDto>> getMyWrongQuestions(
+            @RequestParam(required = false) String tag,
+            @RequestParam(required = false) Boolean mastered,
+            @AuthenticationPrincipal UserDetails user) {
+        var userEntity = userRepository.findByUsername(user.getUsername()).orElseThrow();
+        var result = wrongQuestionRepository.findByUserWithFilters(userEntity.getId(), tag, mastered);
+        return ResponseEntity.ok(result);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> removeFromWrongBook(
+    @Operation(summary = "将某题从错题本移除")
+    public ResponseEntity<Void> removeWrongQuestion(
             @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        var user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-        wrongQuestionRepository.findById(id).ifPresent(wq -> {
-            if (wq.getUser().getId().equals(user.getId())) {
-                wrongQuestionRepository.delete(wq);
-            }
-        });
+            @AuthenticationPrincipal UserDetails user) {
+        var userEntity = userRepository.findByUsername(user.getUsername()).orElseThrow();
+        wrongQuestionRepository.deleteByIdAndUserId(id, userEntity.getId());
         return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/{id}/practice")
-    public ResponseEntity<Question> practiceQuestion(
-            @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        var user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-        WrongQuestion wq = wrongQuestionRepository.findById(id)
-                .filter(w -> w.getUser().getId().equals(user.getId()))
-                .orElseThrow(() -> new RuntimeException("错题不存在"));
-        return ResponseEntity.ok(wq.getQuestion());
-    }
-
-    private WrongQuestionDto toDto(WrongQuestion wq) {
-        Question q = wq.getQuestion();
-        return WrongQuestionDto.builder()
-                .id(wq.getId())
-                .questionId(q.getId())
-                .content(q.getContent())
-                .questionType(q.getType().name())
-                .options(q.getOptions())
-                .correctAnswer(q.getAnswer())
-                .wrongCount(wq.getWrongCount())
-                .consecutiveCorrect(wq.getConsecutiveCorrect())
-                .targetCorrect(3)
-                .lastWrongAt(wq.getLastWrongAt())
-                .mastered(wq.getMastered())
-                .build();
     }
 }

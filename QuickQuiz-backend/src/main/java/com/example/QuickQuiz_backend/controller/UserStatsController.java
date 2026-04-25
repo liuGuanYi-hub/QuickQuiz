@@ -4,6 +4,8 @@ import com.example.QuickQuiz_backend.dto.DailyStatsDto;
 import com.example.QuickQuiz_backend.dto.ExerciseRecordDto;
 import com.example.QuickQuiz_backend.dto.TypeAccuracyDto;
 import com.example.QuickQuiz_backend.dto.UserStatsResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.example.QuickQuiz_backend.entity.User;
 import com.example.QuickQuiz_backend.repository.UserRepository;
 import com.example.QuickQuiz_backend.service.UserStatsService;
@@ -19,12 +21,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Tag(name = "用户数据", description = "学习统计、练习历史、题型分析")
 public class UserStatsController {
 
     private final UserStatsService userStatsService;
     private final UserRepository userRepository;
 
     @GetMapping("/me/stats")
+    @Operation(summary = "获取当前用户的学习统计数据")
     public ResponseEntity<UserStatsResponse> getMyStats(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
         return ResponseEntity.ok(userStatsService.getUserStats(user.getId()));

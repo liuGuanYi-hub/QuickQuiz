@@ -22,6 +22,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -65,10 +66,16 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5178"));
+        // 允许的源列表，支持多个，用逗号分隔；生产环境通过环境变量 CORS_ALLOWED_ORIGINS 注入
+        String allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
+        if (allowedOrigins == null || allowedOrigins.isBlank()) {
+            allowedOrigins = "http://localhost:5173,http://localhost:5178,http://localhost:3000";
+        }
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -80,7 +87,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/index.html",
+                                "/actuator/health"
+                        ).permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())

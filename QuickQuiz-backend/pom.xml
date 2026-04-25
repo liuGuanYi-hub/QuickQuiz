@@ -6,30 +6,18 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.2.5</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
 	<groupId>com.example</groupId>
 	<artifactId>QuickQuiz-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>QuickQuiz-backend</name>
 	<description>QuickQuiz-backend</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
 	<properties>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
 		<java.version>17</java.version>
+		<springdoc.version>2.3.0</springdoc.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -61,7 +49,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
-		<!-- JWT Dependencies -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
@@ -79,21 +66,34 @@
 			<version>0.11.5</version>
 			<scope>runtime</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- SpringDoc OpenAPI 3 (Swagger UI) -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>${springdoc.version}</version>
+		</dependency>
+		<!-- H2 for testing -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
-
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -107,8 +107,6 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
-
 		</plugins>
 	</build>
-
 </project>

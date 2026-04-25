@@ -7,6 +7,9 @@ import com.example.QuickQuiz_backend.entity.Question;
 import com.example.QuickQuiz_backend.entity.QuestionType;
 import com.example.QuickQuiz_backend.entity.SingleChoiceQuestion;
 import com.example.QuickQuiz_backend.repository.QuestionRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,13 +23,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/questions")
 @RequiredArgsConstructor
+@Tag(name = "题目管理", description = "题库的 CRUD 操作")
 public class QuestionController {
 
     private final QuestionRepository questionRepository;
 
     @GetMapping
+    @Operation(summary = "分页获取题目列表", description = "支持搜索关键词和分页")
     public ResponseEntity<Page<Question>> getAllQuestions(
-            @RequestParam(required = false) String search,
+            @Parameter(description = "搜索关键词（按题干模糊匹配）") @RequestParam(required = false) String search,
             Pageable pageable) {
         if (search != null && !search.isEmpty()) {
             return ResponseEntity.ok(questionRepository.findByContentContaining(search, pageable));
@@ -35,6 +40,7 @@ public class QuestionController {
     }
 
     @PostMapping
+    @Operation(summary = "新建题目")
     public ResponseEntity<Question> createQuestion(@Valid @RequestBody QuestionDto dto) {
         Question question = buildQuestionFromDto(dto);
         return ResponseEntity.ok(questionRepository.save(question));
@@ -50,6 +56,7 @@ public class QuestionController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "根据ID获取题目")
     public ResponseEntity<Question> getQuestion(@PathVariable Long id) {
         return questionRepository.findById(id)
                 .map(ResponseEntity::ok)
@@ -57,6 +64,7 @@ public class QuestionController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "编辑题目")
     public ResponseEntity<Question> updateQuestion(
             @PathVariable Long id,
             @Valid @RequestBody QuestionDto dto) {
@@ -74,6 +82,7 @@ public class QuestionController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "删除题目")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long id) {
         questionRepository.deleteById(id);
         return ResponseEntity.noContent().build();

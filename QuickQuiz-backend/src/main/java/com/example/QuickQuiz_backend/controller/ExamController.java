@@ -2,6 +2,8 @@ package com.example.QuickQuiz_backend.controller;
 
 import com.example.QuickQuiz_backend.dto.ExamResultResponse;
 import com.example.QuickQuiz_backend.dto.SubmitExamRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.example.QuickQuiz_backend.entity.*;
 import com.example.QuickQuiz_backend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/exam")
 @RequiredArgsConstructor
+@Tag(name = "练习与考试", description = "随机练习、交卷判分、错题自动入库")
 public class ExamController {
 
     private final QuestionRepository questionRepository;
@@ -29,6 +32,7 @@ public class ExamController {
      * 随机获取指定数量的题目用于练习
      */
     @GetMapping("/questions")
+    @Operation(summary = "获取随机练习题", description = "返回指定数量的随机题目用于练习")
     public ResponseEntity<List<Question>> getExamQuestions(
             @RequestParam(defaultValue = "10") int count,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -45,6 +49,7 @@ public class ExamController {
      * 提交考试答案，判分并返回结果
      */
     @PostMapping("/submit")
+    @Operation(summary = "提交考试答案", description = "判分、记录练习历史、自动将错题加入错题本")
     public ResponseEntity<ExamResultResponse> submitExam(
             @RequestBody SubmitExamRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {

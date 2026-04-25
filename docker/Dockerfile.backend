@@ -1,0 +1,14 @@
+FROM eclipse-temurin:17-jdk-alpine AS builder
+WORKDIR /app
+COPY QuickQuiz-backend/pom.xml .
+COPY QuickQuiz-backend/src ./src
+RUN apk add --no-cache maven && \
+    mvn package -DskipTests -q && \
+    mv target/*.jar app.jar
+
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/app.jar .
+COPY QuickQuiz-backend/src/main/resources/application-prod.properties /app/config/application.properties
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
