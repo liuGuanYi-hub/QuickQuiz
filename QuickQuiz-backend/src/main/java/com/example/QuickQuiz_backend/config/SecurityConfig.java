@@ -66,12 +66,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 允许的源列表，支持多个，用逗号分隔；生产环境通过环境变量 CORS_ALLOWED_ORIGINS 注入
+        // CORS 源列表由环境变量全权控制，不设置则拒绝所有跨域（生产安全默认值）
         String allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
-        if (allowedOrigins == null || allowedOrigins.isBlank()) {
-            allowedOrigins = "http://localhost:5173,http://localhost:5178,http://localhost:3000";
+        if (allowedOrigins != null && !allowedOrigins.isBlank()) {
+            configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         }
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        // else: 不设置 allowedOrigins，默认拒绝所有跨域请求
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
