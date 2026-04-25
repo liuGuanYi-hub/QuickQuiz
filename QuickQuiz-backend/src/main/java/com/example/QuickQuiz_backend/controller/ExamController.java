@@ -57,11 +57,13 @@ public class ExamController {
         User user = userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
-        // 构建 questionId -> Question 映射
-        Map<Long, Question> questionMap = new HashMap<>();
-        for (Question q : questionRepository.findAll()) {
-            questionMap.put(q.getId(), q);
-        }
+        // 只查本次提交涉及到的题目，避免全表加载
+        List<Long> questionIds = request.getAnswers().stream()
+                .map(SubmitExamRequest.QuestionAnswer::getQuestionId)
+                .distinct()
+                .toList();
+        Map<Long, Question> questionMap = questionRepository.findAllById(questionIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Question::getId, q -> q));
 
         // 创建练习记录
         ExerciseRecord record = ExerciseRecord.builder()
