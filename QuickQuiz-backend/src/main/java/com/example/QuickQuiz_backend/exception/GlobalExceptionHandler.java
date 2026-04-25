@@ -32,4 +32,12 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("error", "server_error");
+        body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    }
 }

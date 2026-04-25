@@ -27,6 +27,7 @@ const QuestionBank = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
+    const [editId, setEditId] = useState(null);
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
 
@@ -64,15 +65,30 @@ const QuestionBank = () => {
     };
 
     const parseOptions = (text, type) => {
-        const lines = text
-            .split('\n')
-            .map((s) => s.trim())
-            .filter(Boolean);
+        const lines = text.split('\n').map(s => s.trim()).filter(Boolean);
         if (type === 'TRUE_FALSE') return null;
         return lines;
     };
 
-    const handleCreate = async (e) => {
+    const openCreate = () => {
+        setEditId(null);
+        setForm(emptyForm());
+        setModalOpen(true);
+    };
+
+    const openEdit = (q) => {
+        setEditId(q.id);
+        setForm({
+            content: q.content ?? '',
+            type: q.type ?? 'SINGLE_CHOICE',
+            optionsText: (q.options ?? []).join('\n'),
+            answer: q.answer ?? '',
+            difficulty: q.difficulty ?? 3,
+        });
+        setModalOpen(true);
+    };
+
+    const handleSave = async (e) => {
         e.preventDefault();
         const { content, type, optionsText, answer, difficulty } = form;
         const options = parseOptions(optionsText, type);
@@ -82,19 +98,22 @@ const QuestionBank = () => {
             answer,
             difficulty: Number(difficulty),
         };
-        if (type !== 'TRUE_FALSE') {
-            body.options = options;
-        }
+        if (type !== 'TRUE_FALSE') body.options = options;
+
         setSaving(true);
         try {
-            await axiosInstance.post('/questions', body);
+            if (editId) {
+                await axiosInstance.put(`/questions/${editId}`, body);
+            } else {
+                await axiosInstance.post('/questions', body);
+            }
             setModalOpen(false);
             setForm(emptyForm());
+            setEditId(null);
             await fetchQuestions();
         } catch (err) {
             const msg =
-                err.response?.data?.fields &&
-                Object.values(err.response.data.fields).join(' ')
+                (err.response?.data?.fields && Object.values(err.response.data.fields).join(' '))
                 || err.response?.data?.message
                 || '保存失败';
             alert(msg);
@@ -113,7 +132,7 @@ const QuestionBank = () => {
         }
     };
 
-    const typeLabel = (t) => QUESTION_TYPES.find((x) => x.value === t)?.label || t;
+    const typeLabel = (t) => QUESTION_TYPES.find(x => x.value === t)?.label || t;
 
     return (
         <div className="p-8 max-w-6xl mx-auto">
@@ -128,19 +147,13 @@ const QuestionBank = () => {
                         placeholder="按题干关键词搜索…"
                         className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     />
-                    <button
-                        type="submit"
-                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
-                    >
+                    <button type="submit" className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900">
                         搜索
                     </button>
                 </form>
                 <button
                     type="button"
-                    onClick={() => {
-                        setForm(emptyForm());
-                        setModalOpen(true);
-                    }}
+                    onClick={openCreate}
                     className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
                 >
                     新建题目
@@ -160,21 +173,17 @@ const QuestionBank = () => {
                                 <th className="px-4 py-3">题干</th>
                                 <th className="px-4 py-3 w-28">类型</th>
                                 <th className="px-4 py-3 w-20">难度</th>
-                                <th className="px-4 py-3 w-24">操作</th>
+                                <th className="px-4 py-3 w-32">操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
-                                        加载中…
-                                    </td>
+                                    <td colSpan={5} className="px-4 py-12 text-center text-gray-500">加载中…</td>
                                 </tr>
                             ) : items.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
-                                        暂无题目
-                                    </td>
+                                    <td colSpan={5} className="px-4 py-12 text-center text-gray-500">暂无题目</td>
                                 </tr>
                             ) : (
                                 items.map((q) => (
@@ -186,6 +195,13 @@ const QuestionBank = () => {
                                         <td className="px-4 py-3 text-gray-700">{typeLabel(q.type)}</td>
                                         <td className="px-4 py-3">{q.difficulty ?? '—'}</td>
                                         <td className="px-4 py-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => openEdit(q)}
+                                                className="text-indigo-600 hover:text-indigo-800 font-medium mr-3"
+                                            >
+                                                编辑
+                                            </button>
                                             <button
                                                 type="button"
                                                 onClick={() => handleDelete(q.id)}
@@ -201,14 +217,12 @@ const QuestionBank = () => {
                     </table>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t text-sm text-gray-600">
-                    <span>
-                        共 {totalElements} 条，第 {page + 1} / {Math.max(totalPages, 1)} 页
-                    </span>
+                    <span>共 {totalElements} 条，第 {page + 1} / {Math.max(totalPages, 1)} 页</span>
                     <div className="flex gap-2">
                         <button
                             type="button"
                             disabled={page <= 0 || loading}
-                            onClick={() => setPage((p) => p - 1)}
+                            onClick={() => setPage(p => p - 1)}
                             className="px-3 py-1 rounded border border-gray-300 bg-white disabled:opacity-50"
                         >
                             上一页
@@ -216,7 +230,7 @@ const QuestionBank = () => {
                         <button
                             type="button"
                             disabled={page >= totalPages - 1 || loading || totalPages === 0}
-                            onClick={() => setPage((p) => p + 1)}
+                            onClick={() => setPage(p => p + 1)}
                             className="px-3 py-1 rounded border border-gray-300 bg-white disabled:opacity-50"
                         >
                             下一页
@@ -228,19 +242,17 @@ const QuestionBank = () => {
             {modalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
                     <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-                        <h2 className="text-xl font-semibold mb-4">新建题目</h2>
-                        <form onSubmit={handleCreate} className="space-y-4">
+                        <h2 className="text-xl font-semibold mb-4">{editId ? '编辑题目' : '新建题目'}</h2>
+                        <form onSubmit={handleSave} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">类型</label>
                                 <select
                                     value={form.type}
-                                    onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                                    onChange={(e) => setForm(f => ({ ...f, type: e.target.value }))}
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                                 >
-                                    {QUESTION_TYPES.map((t) => (
-                                        <option key={t.value} value={t.value}>
-                                            {t.label}
-                                        </option>
+                                    {QUESTION_TYPES.map(t => (
+                                        <option key={t.value} value={t.value}>{t.label}</option>
                                     ))}
                                 </select>
                             </div>
@@ -249,20 +261,18 @@ const QuestionBank = () => {
                                 <textarea
                                     required
                                     value={form.content}
-                                    onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+                                    onChange={(e) => setForm(f => ({ ...f, content: e.target.value }))}
                                     rows={3}
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                                 />
                             </div>
                             {form.type !== 'TRUE_FALSE' && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        选项（每行一项）
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">选项（每行一项）</label>
                                     <textarea
                                         required={form.type !== 'TRUE_FALSE'}
                                         value={form.optionsText}
-                                        onChange={(e) => setForm((f) => ({ ...f, optionsText: e.target.value }))}
+                                        onChange={(e) => setForm(f => ({ ...f, optionsText: e.target.value }))}
                                         rows={4}
                                         placeholder="选项 A&#10;选项 B"
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm"
@@ -276,7 +286,7 @@ const QuestionBank = () => {
                                 {form.type === 'TRUE_FALSE' ? (
                                     <select
                                         value={form.answer}
-                                        onChange={(e) => setForm((f) => ({ ...f, answer: e.target.value }))}
+                                        onChange={(e) => setForm(f => ({ ...f, answer: e.target.value }))}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2"
                                         required
                                     >
@@ -288,7 +298,7 @@ const QuestionBank = () => {
                                     <input
                                         required
                                         value={form.answer}
-                                        onChange={(e) => setForm((f) => ({ ...f, answer: e.target.value }))}
+                                        onChange={(e) => setForm(f => ({ ...f, answer: e.target.value }))}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2"
                                     />
                                 )}
@@ -296,19 +306,16 @@ const QuestionBank = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">难度 1–5</label>
                                 <input
-                                    type="number"
-                                    min={1}
-                                    max={5}
-                                    required
+                                    type="number" min={1} max={5} required
                                     value={form.difficulty}
-                                    onChange={(e) => setForm((f) => ({ ...f, difficulty: e.target.value }))}
+                                    onChange={(e) => setForm(f => ({ ...f, difficulty: e.target.value }))}
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                                 />
                             </div>
                             <div className="flex justify-end gap-2 pt-2">
                                 <button
                                     type="button"
-                                    onClick={() => setModalOpen(false)}
+                                    onClick={() => { setModalOpen(false); setEditId(null); }}
                                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                                 >
                                     取消

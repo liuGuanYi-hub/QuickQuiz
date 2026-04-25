@@ -49,6 +49,30 @@ public class QuestionController {
         return ResponseEntity.ok(saved);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Question> getQuestion(@PathVariable Long id) {
+        return questionRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Question> updateQuestion(
+            @PathVariable Long id,
+            @Valid @RequestBody QuestionDto dto) {
+        return questionRepository.findById(id)
+                .map(existing -> {
+                    existing.setContent(dto.getContent());
+                    existing.setDifficulty(dto.getDifficulty());
+                    existing.setAnswer(dto.getAnswer());
+                    if (dto.getType() != QuestionType.TRUE_FALSE) {
+                        existing.setOptions(dto.getOptions());
+                    }
+                    return ResponseEntity.ok(questionRepository.save(existing));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long id) {
         questionRepository.deleteById(id);
