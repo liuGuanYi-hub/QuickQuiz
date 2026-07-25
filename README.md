@@ -45,3 +45,15 @@ QuickQuiz 是一个基于前后端分离架构的个人题库管理与在线测�
 1. 在 MySQL 中创建名为 `quickquiz_db` 的数据库：
    ```sql
    CREATE DATABASE quickquiz_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+## Stable Runbook
+
+For local development, Docker health checks, CORS, and API base URL notes, see [docs/stable-runbook.md](docs/stable-runbook.md).
+
+## 动态系统架构图
+
+![QuickQuiz 动态系统架构图](docs/architecture/dynamic-archify-architecture.svg)
+
+- [打开交互式动态架构图](docs/architecture/dynamic-archify-architecture.html)
+- [查看架构源数据](docs/architecture/dynamic-archify-architecture.json)

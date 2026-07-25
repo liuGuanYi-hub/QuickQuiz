@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "QuickQuiz",
+    "subtitle": "Question bank and online examination platform",
+    "output": "dynamic-archify-architecture.html"
+  },
+  "components": [
+    {
+      "id": "learner",
+      "type": "external",
+      "label": "Learner",
+      "sublabel": "Browser",
+      "pos": [
+        20,
+        250
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "Quiz Frontend",
+      "sublabel": "Vite + exam UI",
+      "pos": [
+        240,
+        250
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Quiz Backend",
+      "sublabel": "Spring Boot API",
+      "pos": [
+        480,
+        250
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Question DB",
+      "sublabel": "Bank + attempts",
+      "pos": [
+        720,
+        250
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "docker",
+      "type": "cloud",
+      "label": "Docker",
+      "sublabel": "Frontend + backend",
+      "pos": [
+        720,
+        100
+      ],
+      "size": [
+        160,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "QuickQuiz application",
+      "wraps": [
+        "frontend",
+        "api",
+        "docker"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "learner",
+      "to": "frontend",
+      "label": "exam",
+      "variant": "emphasis"
+    },
+    {
+      "from": "frontend",
+      "to": "api",
+      "label": "REST",
+      "variant": "emphasis"
+    },
+    {
+      "from": "api",
+      "to": "db",
+      "label": "data"
+    },
+    {
+      "from": "api",
+      "to": "docker",
+      "label": "deploy",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "variant": "dashed"
+    }
+  ],
+  "cards": []
+}
