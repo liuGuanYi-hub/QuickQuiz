@@ -11,9 +11,13 @@ import java.util.Optional;
 public interface WrongQuestionRepository extends JpaRepository<WrongQuestion, Long> {
     List<WrongQuestion> findByUserIdAndMasteredFalseOrderByLastWrongAtDesc(Long userId);
 
+    List<WrongQuestion> findByUserIdAndMasteredTrueOrderByLastWrongAtDesc(Long userId);
+
     List<WrongQuestion> findByUserIdOrderByLastWrongAtDesc(Long userId);
 
     Optional<WrongQuestion> findByUserIdAndQuestionId(Long userId, Long questionId);
+
+    Optional<WrongQuestion> findByIdAndUserId(Long id, Long userId);
 
     long countByUserIdAndMasteredFalse(Long userId);
 }

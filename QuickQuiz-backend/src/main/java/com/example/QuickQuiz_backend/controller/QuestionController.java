@@ -84,6 +84,9 @@ public class QuestionController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除题目")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long id) {
+        if (!questionRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
         questionRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

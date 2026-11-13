@@ -80,7 +80,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {"username": "user2", "password": "wrong"}
+                            {"username": "user2", "password": "wrong123"}
                             """))
                 .andExpect(status().isUnauthorized());
     }
@@ -90,7 +90,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {"username": "dupuser", "password": "pass"}
+                            {"username": "dupuser", "password": "pass123"}
                             """))
                 .andExpect(status().isOk());
 
@@ -98,7 +98,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {"username": "dupuser", "password": "pass"}
+                            {"username": "dupuser", "password": "pass123"}
                             """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Username already exists."));

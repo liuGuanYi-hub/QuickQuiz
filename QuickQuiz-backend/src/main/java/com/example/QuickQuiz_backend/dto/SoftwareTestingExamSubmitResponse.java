@@ -1,0 +1,20 @@
+package com.example.QuickQuiz_backend.dto;
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.math.BigDecimal;
+
+@Data
+@Builder
+public class SoftwareTestingExamSubmitResponse {
+    private Long recordId;
+    private String setId;
+    private Integer setOrder;
+    private String setTitle;
+    private Integer questionCount;
+    private Integer correctCount;
+    private BigDecimal score;
+    private Integer durationSeconds;
+    private Integer wrongQuestionsSaved;
+}

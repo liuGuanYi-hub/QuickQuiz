@@ -5,6 +5,15 @@ import axiosInstance from '../../utils/axiosInstance';
 
 const EXAM_DURATION_SECONDS = 30 * 60; // 30 minutes
 
+const normalizeExamQuestions = (list) =>
+    (list || []).map((q, index) => ({
+        ...q,
+        examNo: index + 1,
+        sessionKey: `${q.id}-${index}`,
+        type: q.type || q.questionType || 'SINGLE_CHOICE',
+        options: q.options || [],
+    }));
+
 const MockExamSession = () => {
     const navigate = useNavigate();
     const [questions, setQuestions] = useState([]);
@@ -27,14 +36,20 @@ const MockExamSession = () => {
             sessionStorage.removeItem('practiceQuestion');
         }
 
-        const count = injectQuestion ? 9 : 10; // 单题练习时只取9道，凑成10道
+        if (injectQuestion) {
+            setQuestions(normalizeExamQuestions([injectQuestion]));
+            setLoading(false);
+            return;
+        }
+
+        const count = 10;
         axiosInstance.get('/exam/questions', { params: { count } })
             .then(({ data }) => {
-                if (injectQuestion) {
+                if (false && injectQuestion) {
                     // 把错题注入到第一题
-                    setQuestions([injectQuestion, ...data]);
+                    setQuestions(normalizeExamQuestions([injectQuestion]));
                 } else {
-                    setQuestions(data);
+                    setQuestions(normalizeExamQuestions(data));
                 }
                 setLoading(false);
                 if (data.length === 0 && !injectQuestion) setError('题库中没有题目，请先添加题目。');
@@ -69,7 +84,8 @@ const MockExamSession = () => {
 
     const currentQ = questions[currentQIndex];
 
-    const isMultiChoice = currentQ?.type === 'MULTIPLE_CHOICE';
+    const isMultiChoice = (currentQ?.type || currentQ?.questionType) === 'MULTIPLE_CHOICE';
+    const isTrueFalse = (currentQ?.type || currentQ?.questionType) === 'TRUE_FALSE';
 
     const handleOptionClick = (optText, optIdx) => {
         if (!currentQ) return;
@@ -88,7 +104,7 @@ const MockExamSession = () => {
             });
         } else {
             // 单选/判断：直接设置
-            const answerStr = String.fromCharCode(65 + optIdx);
+            const answerStr = isTrueFalse ? optText : String.fromCharCode(65 + optIdx);
             setAnswers(a => ({ ...a, [qId]: answerStr }));
             setSelectedOptions(prev => ({ ...prev, [qId]: [optIdx] }));
         }
@@ -191,14 +207,14 @@ const MockExamSession = () => {
                             const isCurrent = idx === currentQIndex;
                             return (
                                 <button
-                                    key={q.id}
+                                    key={q.sessionKey || q.id}
                                     onClick={() => setCurrentQIndex(idx)}
                                     className={`w-10 h-10 rounded-lg flex items-center justify-center font-medium border text-sm transition-all
                                         ${isCurrent ? 'ring-2 ring-indigo-500 border-transparent bg-indigo-50 text-indigo-700' :
                                           answered ? 'bg-green-100 border-green-300 text-green-700' :
                                           'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
                                 >
-                                    {idx + 1}
+                                    {q.examNo || idx + 1}
                                 </button>
                             );
                         })}
@@ -217,7 +233,7 @@ const MockExamSession = () => {
                                 <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-bold rounded-lg uppercase tracking-wide">
                                     {currentQ.type === 'SINGLE_CHOICE' ? '单选题' : currentQ.type === 'MULTIPLE_CHOICE' ? '多选题' : '判断题'}
                                 </span>
-                                <span className="text-gray-400 font-medium">题目 {currentQIndex + 1} / {questions.length}</span>
+                                <span className="text-gray-400 font-medium">题目 {currentQ.examNo || currentQIndex + 1} / {questions.length}</span>
                                 {isMultiChoice && <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">多选</span>}
                             </div>
 

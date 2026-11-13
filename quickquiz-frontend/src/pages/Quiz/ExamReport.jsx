@@ -52,6 +52,26 @@ const ExamReport = () => {
         return 'from-red-600 to-rose-700';
     };
 
+    const answerLabelToIndex = (label) => {
+        if (!label || label.length !== 1) return -1;
+        if (label.toLowerCase() === 't' || label.toLowerCase() === 'f') return -1;
+        return label.toUpperCase().charCodeAt(0) - 65;
+    };
+
+    const formatAnswerWithOption = (answer, options = []) => {
+        if (!answer) return '(未作答)';
+        return answer
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean)
+            .map(item => {
+                const index = answerLabelToIndex(item);
+                const optionText = index >= 0 ? options[index] : null;
+                return optionText ? `${item.toUpperCase()}. ${optionText}` : item;
+            })
+            .join('，');
+    };
+
     return (
         <div className="max-w-6xl mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="text-center space-y-4 pt-6 pb-6 border-b border-gray-200">
@@ -104,13 +124,19 @@ const ExamReport = () => {
                             </ResponsiveContainer>
                         </div>
                         {wrongCount > 0 && (
-                            <div className="bg-amber-50 rounded-xl p-4 border border-amber-100 flex items-start gap-3 self-stretch">
-                                <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                                <div className="text-sm text-amber-800">
-                                    系统已将本次 <strong>{wrongCount} 道错题</strong>自动加入
-                                    <Link to="/error-vault" className="font-bold mx-1 text-amber-900 hover:underline">【错题本】</Link>
-                                    ，建议及时复习巩固。
+                            <div className="bg-amber-50 rounded-xl p-4 border border-amber-100 flex flex-col sm:flex-row sm:items-center gap-3 self-stretch">
+                                <div className="flex items-start gap-3 flex-1">
+                                    <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                    <div className="text-sm text-amber-800">
+                                        系统已将本次 <strong>{wrongCount} 道错题</strong>自动加入错题本，建议及时复习巩固。
+                                    </div>
                                 </div>
+                                <Link
+                                    to="/error-vault"
+                                    className="shrink-0 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition text-center"
+                                >
+                                    进入错题本
+                                </Link>
                             </div>
                         )}
                     </div>
@@ -135,8 +161,8 @@ const ExamReport = () => {
                                     </div>
                                     {!r.isCorrect && (
                                         <div className="ml-6 mt-2 text-sm space-y-1">
-                                            <div className="text-red-600">✗ 你的答案：{r.userAnswer || '(未作答)'}</div>
-                                            <div className="text-green-600">✓ 正确答案：{r.correctAnswer}</div>
+                                            <div className="text-red-600">✗ 你的答案：{formatAnswerWithOption(r.userAnswer, r.options)}</div>
+                                            <div className="text-green-600">✓ 正确答案：{formatAnswerWithOption(r.correctAnswer, r.options)}</div>
                                         </div>
                                     )}
                                 </div>

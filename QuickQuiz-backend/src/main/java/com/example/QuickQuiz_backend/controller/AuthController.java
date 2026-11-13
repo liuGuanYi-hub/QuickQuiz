@@ -1,8 +1,5 @@
 package com.example.QuickQuiz_backend.controller;
 
-import com.example.QuickQuiz_backend.dto.AuthenticationRequest;
-import com.example.QuickQuiz_backend.dto.AuthenticationResponse;
-import com.example.QuickQuiz_backend.dto.RegisterRequest;
 import com.example.QuickQuiz_backend.entity.Role;
 import com.example.QuickQuiz_backend.entity.User;
 import com.example.QuickQuiz_backend.repository.UserRepository;

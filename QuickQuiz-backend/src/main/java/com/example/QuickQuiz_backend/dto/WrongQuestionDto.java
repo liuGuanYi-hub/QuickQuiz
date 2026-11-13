@@ -11,10 +11,16 @@ import java.util.List;
 public class WrongQuestionDto {
     private Long id;
     private Long questionId;
+    private String source;
+    private String examKey;
+    private String staticQuestionId;
+    private Integer chapter;
+    private String chapterTitle;
     private String content;
     private String questionType;
     private List<String> options;
     private String correctAnswer;
+    private String analysis;
     private String lastWrongAnswer;
     private Integer wrongCount;
     private Integer consecutiveCorrect;

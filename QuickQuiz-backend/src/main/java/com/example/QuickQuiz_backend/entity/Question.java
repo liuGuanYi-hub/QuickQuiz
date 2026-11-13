@@ -28,6 +28,22 @@ public abstract class Question {
     @Column(name = "question_type", insertable = false, updatable = false)
     private QuestionType type;
 
+    public QuestionType getType() {
+        if (type != null) {
+            return type;
+        }
+        if (this instanceof SingleChoiceQuestion) {
+            return QuestionType.SINGLE_CHOICE;
+        }
+        if (this instanceof MultipleChoiceQuestion) {
+            return QuestionType.MULTIPLE_CHOICE;
+        }
+        if (this instanceof TrueFalseQuestion) {
+            return QuestionType.TRUE_FALSE;
+        }
+        return null;
+    }
+
     private Integer difficulty;
 
     private String answer;

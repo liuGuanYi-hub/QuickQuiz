@@ -7,12 +7,33 @@ import axiosInstance from '../../utils/axiosInstance';
 
 const BATCH_MAX = 200;
 const CHUNK_DELAY_MS = 120;
+const AI_GENERATE_TIMEOUT_MS = 120000;
+const AI_IMPORT_FADE_DELAY_MS = 700;
+const AI_IMPORT_REMOVE_DELAY_MS = 1400;
 
 const QUESTION_TYPES = [
   { value: 'SINGLE_CHOICE', label: '单选题' },
   { value: 'MULTIPLE_CHOICE', label: '多选题' },
   { value: 'TRUE_FALSE', label: '判断题' },
 ];
+
+const AI_PROVIDERS = {
+  SILICONFLOW: {
+    label: 'SiliconFlow',
+    apiUrl: 'https://api.siliconflow.cn/v1/chat/completions',
+    model: 'Qwen/Qwen2.5-7B-Instruct',
+  },
+  DEEPSEEK: {
+    label: 'DeepSeek',
+    apiUrl: 'https://api.deepseek.com/chat/completions',
+    model: 'deepseek-chat',
+  },
+  MINIMAX: {
+    label: 'MiniMax',
+    apiUrl: 'https://api.minimaxi.com/v1/chat/completions',
+    model: 'MiniMax-M2.7',
+  },
+};
 
 const SmartImportPage = () => {
   // ===== 文本解析状态 =====
@@ -27,9 +48,14 @@ const SmartImportPage = () => {
   const [aiMaterial, setAiMaterial] = useState('');
   const [aiType, setAiType] = useState('SINGLE_CHOICE');
   const [aiCount, setAiCount] = useState(5);
+  const [aiProvider, setAiProvider] = useState('DEEPSEEK');
+  const [aiApiUrl, setAiApiUrl] = useState(AI_PROVIDERS.DEEPSEEK.apiUrl);
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiModel, setAiModel] = useState(AI_PROVIDERS.DEEPSEEK.model);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [aiResults, setAiResults] = useState([]); // { content, options, answer, difficulty }
+  const [aiImportStates, setAiImportStates] = useState({});
 
   // ===== OCR 状态 =====
   const [ocrOpen, setOcrOpen] = useState(false);
@@ -88,7 +114,7 @@ const SmartImportPage = () => {
     const validQuestions = questionsToImport || parsedQuestions.filter(q => q.status === 'success');
     if (validQuestions.length === 0) {
       setImportMessage({ type: 'error', text: '没有可导入的题目，请先生成有效题目。' });
-      return;
+      return false;
     }
 
     setImporting(true);
@@ -106,10 +132,12 @@ const SmartImportPage = () => {
         if (i + BATCH_MAX < payloads.length) await new Promise(r => setTimeout(r, CHUNK_DELAY_MS));
       }
       setImportMessage({ type: 'ok', text: `已成功导入 ${total} 道题到服务器题库。` });
+      return true;
     } catch (err) {
       const msg = (err.response?.data?.fields && Object.values(err.response.data.fields).join(' '))
         || err.response?.data?.message || err.message || '导入失败';
       setImportMessage({ type: 'error', text: msg });
+      return false;
     } finally {
       setImporting(false);
       setImportProgress({ done: 0, total: 0 });
@@ -119,6 +147,8 @@ const SmartImportPage = () => {
   // ===== AI 出题 =====
   const handleAiGenerate = async () => {
     if (!aiMaterial.trim()) { setAiError('请输入学习材料内容'); return; }
+    if (!aiApiUrl.trim()) { setAiError('请输入 API URL'); return; }
+    if (!aiApiKey.trim()) { setAiError('请输入 API Key'); return; }
     setAiGenerating(true);
     setAiError(null);
     try {
@@ -126,20 +156,53 @@ const SmartImportPage = () => {
         material: aiMaterial,
         count: aiCount,
         type: aiType,
+        provider: aiProvider,
+        apiUrl: aiApiUrl,
+        apiKey: aiApiKey,
+        model: aiModel,
+      }, {
+        timeout: AI_GENERATE_TIMEOUT_MS,
       });
       if (data.error) {
         setAiError(data.message || 'AI 生成失败');
       } else {
-        setAiResults(data.questions || []);
+        setAiImportStates({});
+        setAiResults((data.questions || []).map((question, index) => ({
+          ...question,
+          _clientId: `${Date.now()}-${index}`,
+        })));
       }
     } catch (err) {
-      setAiError(err.response?.data?.message || err.message || 'AI 生成失败，请检查网络或配置。');
+      const message = err.code === 'ECONNABORTED'
+        ? 'AI 生成超时，请减少生成数量或学习材料长度后重试。'
+        : err.response?.data?.message || err.message || 'AI 生成失败，请检查网络或配置。';
+      setAiError(message);
     } finally {
       setAiGenerating(false);
     }
   };
 
-  const handleAiImport = () => handleImportToServer(aiResults.map(q => ({ ...q, status: 'success' })));
+  const handleAiImport = async (question) => {
+    const id = question._clientId;
+    setAiImportStates(prev => ({ ...prev, [id]: 'importing' }));
+    const success = await handleImportToServer([{ ...question, status: 'success' }]);
+    if (!success) {
+      setAiImportStates(prev => ({ ...prev, [id]: 'idle' }));
+      return;
+    }
+    setAiImportStates(prev => ({ ...prev, [id]: 'imported' }));
+    window.setTimeout(() => {
+      setAiImportStates(prev => ({ ...prev, [id]: 'fading' }));
+    }, AI_IMPORT_FADE_DELAY_MS);
+    window.setTimeout(() => {
+      setAiResults(prev => prev.filter(item => item._clientId !== id));
+      setAiImportStates(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }, AI_IMPORT_REMOVE_DELAY_MS);
+  };
 
   const handleAiUseText = (q) => {
     // 把 AI 生成的题目追加到文本解析区
@@ -303,10 +366,20 @@ const SmartImportPage = () => {
               </div>
               <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                 {/* AI 生成结果 */}
-                {aiResults.map((q, idx) => (
-                  <div key={`ai-${idx}`} className="p-4 rounded-lg border border-indigo-200 bg-indigo-50/50">
+                {aiResults.map((q, idx) => {
+                  const importState = aiImportStates[q._clientId];
+                  const imported = importState === 'imported' || importState === 'fading';
+                  return (
+                  <div
+                    key={q._clientId || `ai-${idx}`}
+                    className={`p-4 rounded-lg border transition-all duration-700 ${importState === 'fading' ? 'opacity-0 -translate-y-1' : 'opacity-100 translate-y-0'} ${imported ? 'border-green-200 bg-green-50/80' : 'border-indigo-200 bg-indigo-50/50'}`}
+                  >
                     <div className="flex items-start gap-2 mb-2">
-                      <Sparkles className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
+                      {imported ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
+                      )}
                       <span className="font-medium text-gray-800 text-sm">{q.content}</span>
                     </div>
                     <div className="ml-6 grid grid-cols-2 gap-1 text-sm text-gray-600 mb-2">
@@ -317,17 +390,18 @@ const SmartImportPage = () => {
                       ))}
                     </div>
                     <div className="flex gap-2 ml-6">
-                      <button onClick={() => handleAiImport()} disabled={importing}
-                        className="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                        导入此题
+                      <button onClick={() => handleAiImport(q)} disabled={importing || importState === 'importing' || imported}
+                        className={`px-3 py-1 text-white text-xs rounded-lg disabled:opacity-80 ${imported ? 'bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                        {importState === 'importing' ? '导入中...' : imported ? '已导入' : '导入此题'}
                       </button>
-                      <button onClick={() => handleAiUseText(q)}
+                      <button onClick={() => handleAiUseText(q)} disabled={importState === 'importing' || imported}
                         className="px-3 py-1 bg-white border border-indigo-200 text-indigo-600 text-xs rounded-lg hover:bg-indigo-50">
                         追加到文本解析
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 {/* 文本解析结果 */}
                 {parsedQuestions.map((q) => (
                   <div key={q.id} className={`p-4 rounded-lg border ${q.status === 'success' ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50'}`}>
@@ -396,6 +470,55 @@ const SmartImportPage = () => {
                   </div>
                 </div>
 
+                <div className="space-y-3 rounded-lg border border-indigo-100 bg-indigo-50/40 p-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">AI 服务商</label>
+                    <select
+                      value={aiProvider}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        const preset = AI_PROVIDERS[next];
+                        setAiProvider(next);
+                        setAiApiUrl(preset.apiUrl);
+                        setAiModel(preset.model);
+                      }}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm"
+                    >
+                      {Object.entries(AI_PROVIDERS).map(([value, item]) => (
+                        <option key={value} value={value}>{item.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">API URL</label>
+                    <input
+                      value={aiApiUrl}
+                      onChange={(e) => setAiApiUrl(e.target.value)}
+                      placeholder="https://api.deepseek.com/chat/completions"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                    <input
+                      type="password"
+                      value={aiApiKey}
+                      onChange={(e) => setAiApiKey(e.target.value)}
+                      placeholder="sk-..."
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">模型</label>
+                    <input
+                      value={aiModel}
+                      onChange={(e) => setAiModel(e.target.value)}
+                      placeholder="deepseek-chat"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     学习材料 <span className="text-gray-400 font-normal">(粘贴文本内容)</span>
@@ -418,14 +541,14 @@ const SmartImportPage = () => {
 
                 <button
                   onClick={handleAiGenerate}
-                  disabled={aiGenerating || !aiMaterial.trim()}
+                  disabled={aiGenerating || !aiMaterial.trim() || !aiApiUrl.trim() || !aiApiKey.trim()}
                   className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {aiGenerating ? <><Loader2 className="w-4 h-4 animate-spin" /> 生成中…</> : <><Sparkles className="w-4 h-4" /> 生成 {aiCount} 道 {QUESTION_TYPES.find(t => t.value === aiType)?.label}</>}
                 </button>
 
                 <p className="text-xs text-gray-400 text-center">
-                  使用硅基流动 Qwen 模型 · 需配置 API Key
+                  支持 DeepSeek / MiniMax / SiliconFlow，API Key 仅本次请求使用
                 </p>
               </div>
             </div>

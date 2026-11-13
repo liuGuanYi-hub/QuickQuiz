@@ -19,4 +19,12 @@ public class AiGenerateRequest {
 
     @NotNull
     private QuestionType type = QuestionType.SINGLE_CHOICE;
+
+    private String provider = "SILICONFLOW";
+
+    private String apiUrl;
+
+    private String apiKey;
+
+    private String model;
 }

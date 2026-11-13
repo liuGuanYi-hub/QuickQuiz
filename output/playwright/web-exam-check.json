@@ -1,0 +1,33 @@
+{
+  "desktop": {
+    "route": "/web-exam",
+    "titleExists": true,
+    "questionCount": "41",
+    "totalScore": "100",
+    "width": 1440,
+    "scrollWidth": 1440
+  },
+  "mobileBefore": {
+    "openButtonExists": true,
+    "width": 390,
+    "scrollWidth": 390
+  },
+  "mobileMenu": {
+    "sidebarVisible": true,
+    "examNavExists": true
+  },
+  "interaction": {
+    "optionClicked": true,
+    "submitClicked": true
+  },
+  "result": {
+    "reportExists": true,
+    "autoScore": "2",
+    "operationScore": "20",
+    "finalScore": "22",
+    "referenceAnswerExists": true,
+    "width": 1440,
+    "scrollWidth": 1440,
+    "operationInputFound": true
+  }
+}

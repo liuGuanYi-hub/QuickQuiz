@@ -3,7 +3,11 @@ package com.example.QuickQuiz_backend.controller;
 import com.example.QuickQuiz_backend.dto.QuestionDto;
 import com.example.QuickQuiz_backend.entity.QuestionType;
 import com.example.QuickQuiz_backend.entity.SingleChoiceQuestion;
+import com.example.QuickQuiz_backend.repository.ExerciseRecordRepository;
 import com.example.QuickQuiz_backend.repository.QuestionRepository;
+import com.example.QuickQuiz_backend.repository.UserRepository;
+import com.example.QuickQuiz_backend.repository.WebExamWrongQuestionRepository;
+import com.example.QuickQuiz_backend.repository.WrongQuestionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -22,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class QuestionControllerTest {
 
     @Autowired
@@ -33,11 +39,27 @@ class QuestionControllerTest {
     @Autowired
     private QuestionRepository questionRepository;
 
+    @Autowired
+    private ExerciseRecordRepository exerciseRecordRepository;
+
+    @Autowired
+    private WrongQuestionRepository wrongQuestionRepository;
+
+    @Autowired
+    private WebExamWrongQuestionRepository webExamWrongQuestionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
     private String authToken;
 
     @BeforeEach
     void setUp() throws Exception {
+        webExamWrongQuestionRepository.deleteAll();
+        exerciseRecordRepository.deleteAll();
+        wrongQuestionRepository.deleteAll();
         questionRepository.deleteAll();
+        userRepository.deleteAll();
 
         // 注册并登录获取 token
         mockMvc.perform(post("/api/auth/register")

@@ -28,7 +28,7 @@ public class OcrController {
             ));
         }
         try {
-            String text = baiduOcrProvider.recognize(image.getInputStream());
+            String text = baiduOcrProvider.recognizeText(image);
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "text", text

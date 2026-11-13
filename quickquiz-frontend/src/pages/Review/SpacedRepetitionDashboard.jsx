@@ -51,7 +51,7 @@ const SpacedRepetitionDashboard = () => {
                 axiosInstance.get('/users/me/stats'),
                 axiosInstance.get('/users/me/stats/daily', { params: { days: 7 } }),
                 axiosInstance.get('/users/me/stats/types'),
-                axiosInstance.get('/users/me/records', { params: { page: 0, size: 5 } }),
+                axiosInstance.get('/users/me/records', { params: { page: recordsPage, size: 5 } }),
             ]);
             setStats(statsRes.data);
             setDailyStats(dailyRes.data || []);
@@ -63,7 +63,7 @@ const SpacedRepetitionDashboard = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [recordsPage]);
 
     useEffect(() => { fetchStats(); }, [fetchStats]);
 

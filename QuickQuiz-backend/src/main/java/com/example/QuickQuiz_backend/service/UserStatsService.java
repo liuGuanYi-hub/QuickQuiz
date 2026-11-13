@@ -28,6 +28,7 @@ public class UserStatsService {
     private final ExerciseDetailRepository exerciseDetailRepository;
     private final QuestionRepository questionRepository;
     private final WrongQuestionRepository wrongQuestionRepository;
+    private final WebExamWrongQuestionRepository webExamWrongQuestionRepository;
     private final UserRepository userRepository;
 
     public UserStatsResponse getUserStats(Long userId) {
@@ -46,8 +47,10 @@ public class UserStatsService {
         long longestStreak = calcLongestStreak(records);
 
         // 已掌握 / 错题数
-        long masteredCount = wrongQuestionRepository.findByUserIdAndMasteredTrue(userId).size();
-        long wrongCount = wrongQuestionRepository.countByUserIdAndMasteredFalse(userId);
+        long masteredCount = wrongQuestionRepository.findByUserIdAndMasteredTrueOrderByLastWrongAtDesc(userId).size()
+                + webExamWrongQuestionRepository.countByUserIdAndMasteredTrue(userId);
+        long wrongCount = wrongQuestionRepository.countByUserIdAndMasteredFalse(userId)
+                + webExamWrongQuestionRepository.countByUserIdAndMasteredFalse(userId);
 
         // 今日数据
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
@@ -123,7 +126,7 @@ public class UserStatsService {
      */
     public Page<ExerciseRecordDto> getRecordList(Long userId, int page, int size) {
         Page<ExerciseRecord> records = exerciseRecordRepository
-                .findAll(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+                .findByUserId(userId, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
         return records.map(this::toRecordDto);
     }
 

@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import com.example.QuickQuiz_backend.entity.*;
 import com.example.QuickQuiz_backend.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/exam")
@@ -36,13 +36,10 @@ public class ExamController {
     public ResponseEntity<List<Question>> getExamQuestions(
             @RequestParam(defaultValue = "10") int count,
             @AuthenticationPrincipal UserDetails userDetails) {
-        List<Question> all = questionRepository.findAll(PageRequest.of(0, 1000)).getContent();
-        if (all.isEmpty()) {
+        if (count <= 0) {
             return ResponseEntity.ok(Collections.emptyList());
         }
-        Collections.shuffle(all);
-        int size = Math.min(count, all.size());
-        return ResponseEntity.ok(all.subList(0, size));
+        return ResponseEntity.ok(questionRepository.findRandomQuestions(count));
     }
 
     /**
@@ -170,10 +167,33 @@ public class ExamController {
         if (correct == null) return false;
         // 多选题：答案以逗号分隔，比较集合
         if (question.getType() == QuestionType.MULTIPLE_CHOICE) {
-            Set<String> correctSet = new HashSet<>(Arrays.asList(correct.split(",")));
-            Set<String> userSet = new HashSet<>(Arrays.asList(userAnswer.split(",")));
+            Set<String> correctSet = splitAnswerSet(correct);
+            Set<String> userSet = splitAnswerSet(userAnswer);
             return correctSet.equals(userSet);
         }
+        if (question.getType() == QuestionType.TRUE_FALSE) {
+            String normalizedUserAnswer = normalizeTrueFalseAnswer(userAnswer);
+            String normalizedCorrectAnswer = normalizeTrueFalseAnswer(correct);
+            return normalizedUserAnswer.equalsIgnoreCase(normalizedCorrectAnswer);
+        }
         return userAnswer.trim().equalsIgnoreCase(correct.trim());
+    }
+
+    private String normalizeTrueFalseAnswer(String answer) {
+        String normalized = answer.trim();
+        if (normalized.equalsIgnoreCase("A")) {
+            return "True";
+        }
+        if (normalized.equalsIgnoreCase("B")) {
+            return "False";
+        }
+        return normalized;
+    }
+
+    private Set<String> splitAnswerSet(String answer) {
+        return Arrays.stream(answer.split(","))
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .collect(Collectors.toSet());
     }
 }

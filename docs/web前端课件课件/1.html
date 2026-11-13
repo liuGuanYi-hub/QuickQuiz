@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>学号姓名</title>
+
+    <style>
+
+        body {
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            justify-content: center;
+
+            height: 100vh;
+
+            margin: 0;
+
+        }
+
+        #circle {
+
+            width: 200px;
+
+            height: 200px;
+
+            border-radius: 50%;
+
+            background-color: red;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 40px;
+
+            color: white;
+
+            cursor: pointer;
+
+        }
+
+        #copyright {
+
+            margin-top: 20px;
+
+            display: none;
+
+            font-size: 16px;
+
+        }
+
+        button {
+
+            margin-top: 20px;
+
+            padding: 8px 16px;
+
+            font-size: 16px;
+
+            cursor: pointer;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div id="circle">0</div>
+
+    <div id="copyright">版权所有：202303038129曾子丹</div>
+
+    <button id="incrementButton">点击递增</button>
+
+
+
+    <script>
+
+        const circle = document.getElementById('circle');
+
+        const copyright = document.getElementById('copyright');
+
+        const incrementButton = document.getElementById('incrementButton');
+
+        let number = 0;
+
+        let colorIndex = 0;
+
+        const colors = ['red', 'green', 'blue'];
+
+
+
+        
+
+        circle.addEventListener('mouseover', () => {
+
+            copyright.style.display = 'block';
+
+        });
+
+       
+
+        circle.addEventListener('mouseout', () => {
+
+            copyright.style.display = 'none';
+
+        });
+
+        
+
+        incrementButton.addEventListener('click', () => {
+
+            number++;
+
+            circle.textContent = number;
+
+            colorIndex = (colorIndex + 1) % colors.length;
+
+            circle.style.backgroundColor = colors[colorIndex];
+
+        });
+
+    </script>
+
+</body>
+
+</html>
+
+​

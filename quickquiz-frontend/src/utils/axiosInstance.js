@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:8080/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
     timeout: 30000,
 });
 
@@ -24,7 +24,7 @@ axiosInstance.interceptors.response.use(
     },
     (error) => {
         const status = error.response?.status;
-        if (status === 401) {
+        if (status === 401 || status === 403) {
             localStorage.removeItem('token');
             const path = window.location.pathname;
             if (!path.startsWith('/login') && !path.startsWith('/register')) {
